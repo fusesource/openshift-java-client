@@ -5,15 +5,10 @@
 
 	<!-- Parent -->
 	<parent>
-<!--
 		<groupId>org.jboss</groupId>
 		<artifactId>jboss-parent</artifactId>
 		<version>6-beta-2</version>
 		<relativePath />
--->
-        <groupId>org.fusesource</groupId>
-        <artifactId>fusesource-pom</artifactId>
-        <version>1.8</version>
 	</parent>
 
 	<!-- Model Information -->
@@ -33,6 +28,19 @@
 	<name>OpenShift Java Client</name>
 	<url>http://openshift.redhat.com</url>
 	<description>OpenShift Java Client</description>
+
+    <distributionManagement>
+      <repository>
+        <id>fusesource-nexus-staging</id>
+        <name>FuseSource Release Repository</name>
+        <url>http://repo.fusesource.com/nexus/service/local/staging/deploy/maven2</url>
+      </repository>
+      <snapshotRepository>
+        <id>fusesource-nexus-snapshots</id>
+        <name>FuseSource Nexus Snapshots</name>
+        <url>http://repo.fusesource.com/nexus/content/repositories/snapshots</url>
+      </snapshotRepository>
+    </distributionManagement>
 
 	<properties>
         <!-- fusesource parent properties -->
