@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.openshift.client.ApplicationScale;
 import com.openshift.client.IApplication;
@@ -136,8 +137,13 @@ public class DomainResource extends AbstractOpenShiftResource implements IDomain
 		return createApplication(name, cartridge, scale, gearProfile, initialGitUrl, IHttpClient.NO_TIMEOUT);
 	}
 
-	public IApplication createApplication(final String name, final IStandaloneCartridge cartridge,
-			final ApplicationScale scale, final IGearProfile gearProfile, String initialGitUrl, int timeout)
+    public IApplication createApplication(final String name, final IStandaloneCartridge cartridge,
+   			final ApplicationScale scale, final IGearProfile gearProfile, String initialGitUrl, int timeout) {
+        return createApplication(name, cartridge, scale, gearProfile, initialGitUrl, timeout, null);
+    }
+
+    public IApplication createApplication(final String name, final IStandaloneCartridge cartridge,
+			final ApplicationScale scale, final IGearProfile gearProfile, String initialGitUrl, int timeout, Map<String,String> userEnvVars)
 			throws OpenShiftException {
 		if (name == null) {
 			throw new OpenShiftException("Application name is mandatory but none was given.");
@@ -150,7 +156,7 @@ public class DomainResource extends AbstractOpenShiftResource implements IDomain
 		}
 
 		ApplicationResourceDTO applicationDTO =
-				new CreateApplicationRequest().execute(name, cartridge, scale, gearProfile, initialGitUrl, timeout);
+				new CreateApplicationRequest().execute(name, cartridge, scale, gearProfile, initialGitUrl, timeout, userEnvVars);
 		IApplication application = new ApplicationResource(applicationDTO, cartridge, this);
 
 		getOrLoadApplications().add(application);
@@ -311,7 +317,7 @@ public class DomainResource extends AbstractOpenShiftResource implements IDomain
 		}
 
 		public ApplicationResourceDTO execute(final String name, final IStandaloneCartridge cartridge,
-				final ApplicationScale scale, final IGearProfile gearProfile, final String initialGitUrl, final int timeout) throws OpenShiftException {
+				final ApplicationScale scale, final IGearProfile gearProfile, final String initialGitUrl, final int timeout, Map<String,String> userEnvVars) throws OpenShiftException {
 			if (cartridge == null) {
 				throw new OpenShiftException("Application cartridge is mandatory but was not given.");
 			} 
@@ -322,6 +328,8 @@ public class DomainResource extends AbstractOpenShiftResource implements IDomain
 			addScaleParameter(scale, parameters);
 			addGearProfileParameter(gearProfile, parameters);
 			addStringParameter(IOpenShiftJsonConstants.PROPERTY_INITIAL_GIT_URL, initialGitUrl, parameters);
+            addListOfNameValuePairs(IOpenShiftJsonConstants.PROPERTY_ENVIRONMENT_VARIABLES, userEnvVars,
+                    parameters);
 
 			if (isDownloadableCartridge(cartridge)) {
                 return super.execute(timeout, new JsonMediaType(), (ServiceParameter[]) parameters.toArray(new ServiceParameter[parameters.size()]));
@@ -365,6 +373,26 @@ public class DomainResource extends AbstractOpenShiftResource implements IDomain
 				return parameters;
 			}
 			parameters.add(new ServiceParameter(parameterName, value));
+			return parameters;
+		}
+
+		private List<ServiceParameter> addListOfNameValuePairs(String parameterName,
+                                                               Map<String, String> value,
+                                                               List<ServiceParameter> parameters) {
+			if (value == null) {
+				return parameters;
+			}
+            Set<Map.Entry<String,String>> entries = value.entrySet();
+
+            // lets convert the Map into a List of {"name": key, "value": value} objects
+            List<Map<String,String>> listOfNameValuePairs = new ArrayList<Map<String, String>>();
+            for (Map.Entry<String, String> entry : entries) {
+                Map<String,String> envVar = new HashMap<String, String>();
+                envVar.put("name", entry.getKey());
+                envVar.put("value", entry.getValue());
+                listOfNameValuePairs.add(envVar);
+            }
+			parameters.add(new ServiceParameter(parameterName, listOfNameValuePairs));
 			return parameters;
 		}
 
